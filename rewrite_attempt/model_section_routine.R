@@ -23,7 +23,7 @@ add_varying_term_with_intercept_rand_eff_term_to_model_section <- function(parse
   return(model_section)
 }
 
-add_intercept_to_model_section <- function(model_section, default_prior)
+add_intercept_to_model_section <- function(model_section)
 {
   return(paste(model_section, create_prior_line("Intercept", "normal(0, 10)"), sep = ""))
 }
