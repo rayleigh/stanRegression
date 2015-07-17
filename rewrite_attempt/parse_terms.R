@@ -104,7 +104,7 @@ fill_info_for_random_eff_term <- function(var_terms, original_term, term_type, p
   parsed_term$"stan_data_info"[[varying_template_name]] <- coerce_index(with(data_matrix, eval(parse(text = varying_term))))
   parsed_term$"stan_data_info"[[varying_term_size]] <- length(unique(parsed_term$"stan_data_info"[[varying_template_name]]))
 
-  parsed_term$"component_terms" <- list(term_to_vary, varying_term_template)
+  parsed_term$"component_terms" <- list(term_to_vary, varying_template_name)
   return(parsed_term)
 }
 
