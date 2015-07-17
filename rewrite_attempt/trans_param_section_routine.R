@@ -4,7 +4,7 @@ add_varying_term_rand_eff_term_to_trans_param_section <- function(parsed_term, t
   
   trans_param_section <- paste(trans_param_section, create_trans_param_multiplication_assignment_line(parsed_term$"trans_param_terms"[[1]], parsed_term$"param_terms"[[1]], parsed_term$"param_terms"[[2]]), sep = "")
 
-  return(param_section)
+  return(trans_param_section)
 }
 
 add_varying_term_with_intercept_rand_eff_term_to_trans_param_section <- function(parsed_term, trans_param_section)
