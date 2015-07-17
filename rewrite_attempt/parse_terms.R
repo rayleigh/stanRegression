@@ -1,18 +1,3 @@
-parse_predictor_term <- function(predictor_term, data_matrix)
-{
-  parsed_term <- list()
-  parsed_term$"term_name" <- predictor_term
-  parsed_term$"random_eff" <- grepl("|", predictor_term)
-  if (parsed_term$"random_eff")
-  {
-    parsed_term <- parse_random_eff_term(predictor_term, data_matrix, parsed_term)
-  }
-  else
-  {
-    parsed_term <- parse_fixed_eff_term(predictor_term, data_matrix, parsed_term)
-  }
-}
-
 parse_fixed_eff_term <- function(predictor_term, data_matrix)
 {
   parsed_term <- list()
@@ -155,28 +140,6 @@ parse_resp_term <- function(resp_term, data_matrix)
   return(parsed_resp_term)
 }
 
-add_resp_term_info_for_gaussian <- function(parsed_term)
-{
-  #Data section
-  num_data_vars <- length(parsed_resp_term$"data_terms")
-  parsed_term$"stan_data_type" <- list(rep("real", num_data_vars - 1), "int")
-
-  #Param section
-  parsed_term$"param_terms" <- list("sigma")  
-}
-
-add_resp_term_info_for_binomial <- function(parsed_term)
-{
-  #Data section
-  sample_size
-  num_data_vars <- length(parsed_resp_term$"data_terms")
-  parsed_term$"stan_data_type" <- list(rep("real", num_data_vars - 1), "int")
-  
-  
-}
-
-
-
 coerce_index <- function( x ) 
 {
   as.integer(as.factor(as.character(x)))
@@ -200,7 +163,7 @@ attach_prefix <- function(term_name, term_type)
 
 determine_stan_type <- function(term_type)
 {
-  if (termp_type == "integer")
+  if (term_type == "integer")
   {
     return("int")
   }
