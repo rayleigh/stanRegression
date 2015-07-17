@@ -1,21 +1,32 @@
-add_parsed_term_to_ll_stmt <- function(parsed_term, ll_stmt)
-{
-  if (parsed_term$"random_eff")
-  {
-    ll_stmt <- add_rand_eff_term_to_ll_stmt(parsed_term, ll_stmt)
-  }
-  else
-  {    
-    ll_stmt <- add_fixed_eff_term_to_ll_stmt(parsed_term, ll_stmt)
-  }
-  return(ll_stmt)
-}
-
 add_fixed_eff_term_to_ll_stmt <- function(parsed_term, ll_stmt)
 {
   model_segment <- paste(parsed_term$"data_terms"[[1]], "[i]")
   model_segment <- paste(parsed_term$"param_terms"[[1]], "*", model_segment, sep = " ")
-  return(paste(ll_stmt, model_segment, " + ", sep=""))
+  return(paste(ll_stmt, model_segment, sep= " + "))
+}
+
+add_varying_term_rand_eff_term_to_ll_stmt <- function(parsed_term, ll_stmt)
+{
+  model_segment <- paste(parsed_term$"trans_param_terms"[[1]], "[", parsed_term$"data_terms"[[1]], "[i]]", sep = "")
+  
+  if (parsed_term$"component_terms"[[1]] != "Intercept")
+  {
+    model_segment <- paste(model_segment, parsed_term$"term_components"[[1]], sep = " * ")
+  }
+
+  return(paste(ll_stmt, model_segment, sep = " + "))
+}
+
+add_varying_term_with_intercept_rand_eff_term_to_ll_stmt <- function(parsed_term, model_section)
+{
+  model_segment <- paste(parsed_term$"trans_param_terms"[[1]], "[", parsed_term$"data_terms"[[1]], "[i], ", sep = "")
+  
+  model_segment_intercept <- paste(model_segment,  "1]", sep = "")
+  
+  model_segment_var <- paste(model_segment, "2]", sep = "")
+  model_segment_var <- paste(model_segment_var, parsed_term$"term_components"[[1]], sep = " * ")
+  
+  return(paste(ll_stmt, model_segment_intercept, model_segment_var, sep = " + "))
 }
 
 add_intercept_to_ll_stmt <- function(ll_stmt)
@@ -35,9 +46,9 @@ add_ll_stmt_to_section_for_binomial <- function(ll_stmt, resp_term_size, section
 
 add_ll_stmt_to_section <- function(ll_stmt, resp_term_size, ll_prob_term, section)
 {
-  section <- paste("vector[", resp_term_size, "] ", ll_prob_term, ";\n", section, sep = "") 
-  section <- paste(section, "for (i in 1:", resp_term_size, ") {\n", sep = "")
-  section <- paste(section, ll_prob_term, "[i] <-", ll_stmt, ";\n}\n", sep = "")
+  section <- paste("vector[", resp_term_size, "] ", ll_prob_term, ";", section, sep = "") 
+  section <- paste(section, "for (i in 1:", resp_term_size, ") {\n  ", sep = "")
+  section <- paste(section, ll_prob_term, "[i] <-", ll_stmt, ";}\n", sep = "")
   
   return(section)  
 }

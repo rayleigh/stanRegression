@@ -22,7 +22,6 @@ parse_fixed_eff_term <- function(predictor_term, data_matrix)
   #Data section
   parsed_term$"data_terms" <- list(term_template_name)
   parsed_term$"stan_data_type" <- list(determine_stan_type(typeof(data_matrix$predictor_term)))
-  parsed_term$"data_var_type" <- list("array")
   parsed_term$"size" <- list("N")
   
   #Param section
@@ -73,7 +72,6 @@ parse_a_rand_eff_term <- function(original_term, data_matrix)
 
   if (intercept_term == var_terms)
   {
-
     var_terms <- gsub( "1 |" , "Intercept |" , var_terms , fixed=TRUE )
     parsed_term <- fill_info_for_random_eff_term(var_terms, original_term, "vector", parsed_term, data_matrix)
     parsed_term$"ran_eff_type" <- "varying_term"  
@@ -96,7 +94,7 @@ fill_info_for_random_eff_term <- function(var_terms, original_term, term_type, p
 {
   split_var_terms_list <- get_terms_on_both_sides(var_terms, " | ")
   varying_term <- split_var_terms_list[["right_term"]]
-  term_to_vary <- split_var_terms_list[["left_term"]]
+  term_to_vary <- clean_term_name(split_var_terms_list[["left_term"]])
   
   varying_template_name <- clean_term_name(varying_term)
   varying_term_size <- paste("N", varying_template_name, sep = "_")
@@ -104,10 +102,7 @@ fill_info_for_random_eff_term <- function(var_terms, original_term, term_type, p
   
   #Data section info
   parsed_term$"data_terms" <- list(varying_template_name, varying_term_size)
-  parsed_term$"data_var_type" <- list("array", "constant")
-  parsed_term$"stan_data_type" <- list("int", "int")
   parsed_term$"size" <- list("N", "")
-  parsed_term$"data_constraint" <- list("", "<lower = 1>")
 
   #Parameter section info
   parsed_term$"param_terms" <- list(paste("sigma", var_terms_template_name, sep = "_"), paste(var_terms_template_name, "std", sep = "_"))
@@ -124,19 +119,21 @@ fill_info_for_random_eff_term <- function(var_terms, original_term, term_type, p
   parsed_term$"stan_data_info"[[varying_template_name]] <- coerce_index(with(data_matrix, eval(parse(text = varying_term))))
   parsed_term$"stan_data_info"[[varying_term_size]] <- length(unique(parsed_term$"stan_data_info"[[varying_template_name]]))
 
+  parsed_term$"component_terms" <- list(term_to_vary, varying_term_template)
   return(parsed_term)
 }
 
-parse_resp_term <- function(resp_term, data_matrix, family)
+parse_resp_term <- function(resp_term, data_matrix)
 {
   temp_formula <- formula(paste(resp_term, "~ 1"))
   parsed_resp_term <- list()
   size_term <- "N"
   
   resp_data_matrix <- as.data.frame(model.frame(temp_formula, data_matrix))
-  sample_size <- rowSums(resp_data_matrix)
-  resp_data_matrix <- cbind(resp_data_matrix, sample_size)
   resp_var_names <- colnames(resp_data_matrix)
+  sample_size_name <- paste(resp_var_names[1], "sample_size_list", sep = "_")
+  resp_data_matrix[[sample_size_name]] <- rowSums(resp_data_matrix)
+  resp_var_names <- c(resp_var_names, sample_size_name)
   num_resp_vars <- length(resp_var_names)
   
   #Data section  
@@ -147,6 +144,7 @@ parse_resp_term <- function(resp_term, data_matrix, family)
   parsed_resp_term$"data_terms" <- c(parsed_resp_term$"data_terms", list(size_term))
   parsed_resp_term$"size" <- list(rep("N", num_resp_vars - 1))
   
+  parsed_resp_term$"special_vectors_index" <- list("sample_size" = (length(parsed_resp_term$"data_terms") - 1)) 
   
   #Stan data info
   stan_data_list <- as.list(resp_data_matrix)
