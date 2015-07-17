@@ -19,11 +19,15 @@ parse_fixed_eff_term <- function(predictor_term, data_matrix)
   
   term_template_name <- clean_term_name(predictor_term)
 
-  parsed_term$"stan_data_type" <- list(determine_stan_type(typeof(data_matrix$predictor_term)))
+  #Data section
   parsed_term$"data_terms" <- list(term_template_name)
+  parsed_term$"stan_data_type" <- list(determine_stan_type(typeof(data_matrix$predictor_term)))
+  parsed_term$"data_var_type" <- list("array")
+  parsed_term$"size" <- list("N")
+  
+  #Param section
   parsed_term$"param_terms" <- list(attach_prefix(term_template_name, "beta"))
   
-  parsed_term$"data_var_type" <- list("array")
   parsed_term$"size" <- list("N")
   
   
@@ -103,8 +107,8 @@ fill_info_for_random_eff_term <- function(var_terms, original_term, term_type, p
   parsed_term$"data_var_type" <- list("array", "constant")
   parsed_term$"stan_data_type" <- list("int", "int")
   parsed_term$"size" <- list("N", "")
-  parsed_term$"data_constraint" <- list("", "lower = 1")
-  
+  parsed_term$"data_constraint" <- list("", "<lower = 1>")
+
   #Parameter section info
   parsed_term$"param_terms" <- list(paste("sigma", var_terms_template_name, sep = "_"), paste(var_terms_template_name, "std", sep = "_"))
   if (term_type == "matrix")
@@ -130,6 +134,8 @@ parse_resp_term <- function(resp_term, data_matrix, family)
   size_term <- "N"
   
   resp_data_matrix <- as.data.frame(model.frame(temp_formula, data_matrix))
+  sample_size <- rowSums(resp_data_matrix)
+  resp_data_matrix <- cbind(resp_data_matrix, sample_size)
   resp_var_names <- colnames(resp_data_matrix)
   num_resp_vars <- length(resp_var_names)
   
@@ -138,20 +144,16 @@ parse_resp_term <- function(resp_term, data_matrix, family)
                                           function(i) {var_name <- clean_term_name(resp_var_names[i]);
                                           colnames(resp_data_matrix)[i] <- var_name;
                                           return(var_name);})
+  parsed_resp_term$"data_terms" <- c(parsed_resp_term$"data_terms", list(size_term))
+  parsed_resp_term$"size" <- list(rep("N", num_resp_vars - 1))
+  
   
   #Stan data info
   stan_data_list <- as.list(resp_data_matrix)
   stan_data_list[[size_term]] <- length(stan_data_list[[1]])
   parsed_resp_term$"stan_data_info" <- stan_data_list
   
-  #Fill in rest of information based on the family
-  parsed_resp_term <- eval(parse(text = paste("add_resp_param_info_for_", family, "(parsed_resp_term)", sep = "")))
-  
-  parsed_resp_term$"data_terms" <- c(parsed_resp_term$"data_terms", list(size_term))
-  parsed_term$"data_var_type" <- c(list(rep("array", num_resp_vars)), list("constant"))
-  parsed_resp_term$"size" <- list(rep(size_term, num_resp_vars))
-  parsed_term$"data_constraint" <- list(rep("", num_resp_vars), "lower=1")
-  
+
   return(parsed_resp_term)
 }
 
@@ -172,8 +174,6 @@ add_resp_term_info_for_binomial <- function(parsed_term)
   num_data_vars <- length(parsed_resp_term$"data_terms")
   parsed_term$"stan_data_type" <- list(rep("real", num_data_vars - 1), "int")
   
-  sample_size <- rowSums(resp_data_matrix)
-  resp_data_matrix <- cbind(resp_data_matrix, sample_size)
   
 }
 
