@@ -11,7 +11,7 @@ add_varying_term_rand_eff_term_to_ll_stmt <- function(parsed_term, ll_stmt)
   
   if (parsed_term$"component_terms"[[1]] != "Intercept")
   {
-    model_segment <- paste(model_segment, parsed_term$"term_components"[[1]], sep = " * ")
+    model_segment <- paste(model_segment, parsed_term$"component_terms"[[1]], sep = " * ")
   }
 
   return(paste(ll_stmt, model_segment, sep = " + "))
