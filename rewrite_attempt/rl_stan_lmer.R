@@ -1,3 +1,11 @@
+source('~/Documents/Gelman Research/Replication/data_section_routines.R')
+source('~/Documents/Gelman Research/Replication/parse_terms.R')
+source('~/Documents/Gelman Research/Replication/param_section_routine.R')
+source('~/Documents/Gelman Research/Replication/trans_param_section_routine.R')
+source('~/Documents/Gelman Research/Replication/model_section_routine.R')
+source('~/Documents/Gelman Research/Replication/ll_stmt_routine.R')
+source('~/Documents/Gelman Research/Replication/generated_section_routine.R')
+
 stan_lmer <- function(user_formula, data, family = "gaussian",
                       default_prior = "dnorm(0,1)", loc_scale_transform = TRUE,
                       file_name = NULL, run_stan = FALSE, ...) 
@@ -39,7 +47,7 @@ create_stan_code_sections_and_data_list <- function(predictor_terms, resp_term, 
   
   return(list("data" = code_section_list$data_section, "parameters" = code_section_list$param_section, 
                 "transformed parameters" = code_section_list$trans_param_section, "model" = code_section_list$model_section,
-                  "generated" = code_section_list$generated_section, "data_list" = stan_data))
+                  "generated quantities" = code_section_list$generated_section, "data_list" = stan_data))
   
 }
 
@@ -147,7 +155,9 @@ add_resp_term_and_ll_to_sections_for_binomial <- function(resp_term, data_matrix
 write_stan_code_to_file <- function(stan_code_sections, file_name)
 {
   indent = "  "
-  line_ending = paste(";\n", indent, sep = "")
+  semicolon_indenting = paste(";\n", indent, sep = "")
+  open_bracket_indenting = paste("{\n", indent, sep = "")
+  close_bracket_indenting = paste("}\n", indent, sep = "")
   
   section_names_list <- names(stan_code_sections)
   code_string = ""
@@ -157,7 +167,11 @@ write_stan_code_to_file <- function(stan_code_sections, file_name)
     code_for_section <- stan_code_sections[[i]]
     section_name <- section_names_list[i]
    
-    code_for_section <- gsub(";", line_ending, code_for_section, fixed = T)   
+    code_for_section <- gsub(";", semicolon_indenting, code_for_section, fixed = T)   
+    code_for_section <- gsub("{", open_bracket_indenting, code_for_section, fixed = T)
+    code_for_section <- gsub("}", close_bracket_indenting, code_for_section, fixed = T)
+    code_for_section <- gsub(paste(indent, "$", sep = ""), "", code_for_section, perl = T)
+    
     code_string <- paste(code_string, section_name, "{\n", indent, code_for_section, "}\n", sep = "")
   }
   

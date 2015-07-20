@@ -48,8 +48,8 @@ add_ll_stmt_to_section_for_binomial <- function(ll_stmt, resp_term_size, section
 add_ll_stmt_to_section <- function(ll_stmt, resp_term_size, ll_prob_term, section)
 {
   section <- paste("vector[", resp_term_size, "] ", ll_prob_term, ";", section, sep = "") 
-  section <- paste(section, "for (i in 1:", resp_term_size, ") {\n  ", sep = "")
-  section <- paste(section, ll_prob_term, "[i] <- ", ll_stmt, ";}\n", sep = "")
+  section <- paste(section, "for (i in 1:", resp_term_size, ") {  ", sep = "")
+  section <- paste(section, ll_prob_term, "[i] <- ", ll_stmt, ";}", sep = "")
   
   return(section)  
 }

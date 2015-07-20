@@ -5,8 +5,8 @@ add_fixed_eff_term_to_model_section <- function(parsed_term, model_section)
 
 add_varying_term_rand_eff_term_to_model_section <- function(parsed_term, model_section)
 {
-  model_section <- paste(model_section, create_prior_line(parsed_term$"param_terms"[[1]], "normal(0,1)"))
-  model_section <- paste(model_section, create_prior_line(parsed_term$"param_terms"[[2]], "normal(0,1)"))
+  model_section <- paste(model_section, create_prior_line(parsed_term$"param_terms"[[1]], "normal(0,1)"), sep = "")
+  model_section <- paste(model_section, create_prior_line(parsed_term$"param_terms"[[2]], "normal(0,1)"), sep = "")
   
   return(model_section)
 }
