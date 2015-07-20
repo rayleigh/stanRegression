@@ -13,12 +13,12 @@ add_varying_term_rand_eff_term_to_model_section <- function(parsed_term, model_s
 
 add_varying_term_with_intercept_rand_eff_term_to_model_section <- function(parsed_term, model_section)
 {
-  model_section <- paste(model_section, create_prior_line(parsed_term$"param_terms"[[1]], "normal(0,1)"))
+  model_section <- paste(model_section, create_prior_line(parsed_term$"param_terms"[[1]], "normal(0,1)"), sep = "")
   
   term_mod_for_matrix <- paste("to_vector(", parsed_term$"param_terms"[[2]], ")", sep = "")
-  model_section <- paste(model_section, create_prior_line(term_mod_for_matrix, "normal(0,1)"))
+  model_section <- paste(model_section, create_prior_line(term_mod_for_matrix, "normal(0,1)"), sep = "")
 
-  model_section <- paste(model_section, create_prior_line(parsed_term$"param_terms"[[3]], "lkj_corr_cholesky(2)"))
+  model_section <- paste(model_section, create_prior_line(parsed_term$"param_terms"[[3]], "lkj_corr_cholesky(2)"), sep = "")
   
   return(model_section)
 }
