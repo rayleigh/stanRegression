@@ -127,7 +127,7 @@ parse_resp_term <- function(resp_term, data_matrix)
                                           colnames(resp_data_matrix)[i] <- var_name;
                                           return(var_name);})
   parsed_resp_term$"data_terms" <- c(parsed_resp_term$"data_terms", list(size_term))
-  parsed_resp_term$"size" <- list(rep("N", num_resp_vars - 1))
+  parsed_resp_term$"size" <- lapply(1:(num_resp_vars - 1), function(i) return("N"))
   
   parsed_resp_term$"special_vectors_index" <- list("sample_size" = (length(parsed_resp_term$"data_terms") - 1)) 
   
