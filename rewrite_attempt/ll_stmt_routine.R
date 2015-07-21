@@ -1,7 +1,7 @@
 add_fixed_eff_term_to_ll_stmt <- function(parsed_term, ll_stmt)
 {
-  model_segment <- paste(parsed_term$"data_terms"[[1]], "[i]")
-  model_segment <- paste(parsed_term$"param_terms"[[1]], "*", model_segment, sep = " ")
+  model_segment <- paste(parsed_term$"data_terms"[[1]], "[i]", sep = "")
+  model_segment <- paste(parsed_term$"param_terms"[[1]], model_segment, sep = " * ")
   return(paste(ll_stmt, model_segment, sep= " + "))
 }
 
@@ -11,7 +11,8 @@ add_varying_term_rand_eff_term_to_ll_stmt <- function(parsed_term, ll_stmt)
   
   if (parsed_term$"component_terms"[[1]] != "Intercept")
   {
-    model_segment <- paste(model_segment, parsed_term$"component_terms"[[1]], sep = " * ")
+    model_segment_data_var <- paste(parsed_term$"component_terms"[[1]], "[i]", sep = "")
+    model_segment <- paste(model_segment, model_segment_data_var, sep = " * ")
   }
 
   return(paste(ll_stmt, model_segment, sep = " + "))
@@ -54,3 +55,7 @@ add_ll_stmt_to_section <- function(ll_stmt, resp_term_size, ll_prob_term, sectio
   return(section)  
 }
 
+create_term_multiplication_item <- function(term1, term2)
+{
+  return(paste(term1, term2, sep = " * "))
+}
