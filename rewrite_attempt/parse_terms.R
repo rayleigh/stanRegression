@@ -43,7 +43,7 @@ expand_slash <- function(original_term)
     if(var_length > 2) stop('Only supports maximum of 1 "/"')
     var_term <- var_list[1]
     interact_ranef_term <- paste(varying_var, var_list[2], sep=':')
-    return(list(original_term, paste("1", interact_ranef_term, sep = " | ")))
+    return(list(var_term, interact_ranef_term))
   }
 }
 
@@ -114,9 +114,9 @@ parse_resp_term <- function(resp_term, data_matrix)
   parsed_resp_term <- list()
   size_term <- "N"
   
-  resp_data_matrix <- as.data.frame(model.frame(temp_formula, data_matrix))
+  resp_data_matrix <- as.data.frame(model.frame(temp_formula, data_matrix)[[1]])
   resp_var_names <- colnames(resp_data_matrix)
-  sample_size_name <- paste(resp_var_names[1], "sample_size_list", sep = "_")
+  sample_size_name <- paste(resp_var_names[1], "sample_num", sep = "_")
   resp_data_matrix[[sample_size_name]] <- rowSums(resp_data_matrix)
   resp_var_names <- c(resp_var_names, sample_size_name)
   num_resp_vars <- length(resp_var_names)

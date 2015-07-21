@@ -12,7 +12,7 @@ stan_lmer <- function(user_formula, data, family = "gaussian",
 {
   formula_info <- terms(user_formula, simpify = T)
   predictor_terms <- attr(formula_info, "term.labels")
-  resp_term <- attr(formula_info, "variables")[[2]]
+  resp_term <- deparse(attr(formula_info, "variables")[[2]])
   add_intercept <- (attr(formula_info, "intercept") == 1)
   
   stan_info <- create_stan_code_sections_and_data_list(predictor_terms, resp_term, add_intercept, family, data)
