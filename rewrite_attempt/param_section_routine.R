@@ -1,6 +1,10 @@
-add_fixed_eff_term_to_param_section <- function(parsed_term, param_section)
+add_fixed_eff_term_to_param_section <- function(parsed_fixed_term, param_section)
 {
-  return(paste(param_section, create_param_constant_line(parsed_term$"param_terms"[[1]]), sep = ""))
+  for (i in 1:parsed_fixed_term$"num_terms")
+  {
+    param_section <-paste(param_section, create_param_constant_line(parsed_fixed_term$"param_terms"[[i]]), sep = "")
+  }
+  return(param_section)
 }
 
 add_varying_term_rand_eff_term_to_param_section <- function(parsed_term, param_section)

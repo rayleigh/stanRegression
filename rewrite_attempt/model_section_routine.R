@@ -1,6 +1,10 @@
-add_fixed_eff_term_to_model_section <- function(parsed_term, model_section)
+add_fixed_eff_term_to_model_section <- function(parsed_fixed_term, model_section)
 {
-  return(paste(model_section, create_prior_line(parsed_term$"param_terms"[[1]], "normal(0, 10)"), sep = ""))
+  for (i in 1:parsed_fixed_term$"num_terms")
+  {
+    model_section <- paste(model_section, create_prior_line(parsed_fixed_term$"param_terms"[[i]], "normal(0, 10)"), sep = "") 
+  }
+  return(model_section)
 }
 
 add_varying_term_rand_eff_term_to_model_section <- function(parsed_term, model_section)
@@ -51,8 +55,16 @@ add_resp_term_to_model_section_for_binomial <- function(resp_term, model_section
   return(paste(model_section, create_prior_line(resp_term$data_terms[[1]], model_distr), sep = ""))  
 }
 
-create_prior_line <- function(var_name, prior)
+create_prior_line <- function(var_name, default_prior, override_prior = "")
 {
+  if (override_prior == "")
+  {
+    prior = default_prior
+  }
+  else
+  {
+    prior = override_prior
+  }
   line <- paste(prior, ";", sep = "")
   line <- paste(var_name, line, sep = " ~ ")
   return(line)

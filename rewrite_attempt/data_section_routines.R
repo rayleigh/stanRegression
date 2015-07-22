@@ -1,6 +1,11 @@
 add_fixed_eff_term_to_data_section <- function(parsed_fixed_term, data_section)
 {
-  return(paste(data_section, create_array_data_line(parsed_fixed_term$"data_terms"[[1]], parsed_fixed_term$"stan_data_type"[[1]], parsed_fixed_term$"size"[[1]]), sep = ""))
+  for (i in 1:parsed_fixed_term$"num_terms")
+  {
+    data_section <- paste(data_section, create_array_data_line(parsed_fixed_term$"data_terms"[[i]], parsed_fixed_term$"stan_data_type"[[i]], parsed_fixed_term$"size"[[i]]), sep = "")
+  }    
+  
+  return(data_section)
 }
 
 add_rand_eff_term_to_data_section <- function(parsed_term, data_section)
