@@ -129,10 +129,10 @@ parse_resp_term <- function(resp_term, data_matrix)
   parsed_resp_term <- list()
   size_term <- "N"
   
-  resp_data_matrix <- model.frame(temp_formula, data_matrix)[1]
-  if (dim(resp_data_matrix)[2] > 1)
+  resp_data_matrix <- model.frame(temp_formula, data_matrix)[[1]]
+  if (is.null(dim(resp_data_matrix)))
   {
-    resp_data_matrix <- resp_data_matrix[[1]] 
+    resp_data_matrix <- model.frame(temp_formula, data_matrix)[1] 
   }
   resp_data_matrix <- as.data.frame(resp_data_matrix)
   resp_var_names <- colnames(resp_data_matrix)
