@@ -6,7 +6,7 @@ add_fixed_eff_term_to_ll_stmt <- function(parsed_fixed_term, ll_stmt)
     model_segment <- paste(parsed_fixed_term$"param_terms"[[i]], model_segment, sep = " * ")
     ll_stmt <- paste(ll_stmt, model_segment, sep= " + ")
   }
-  return(paste(ll_stmt, model_segment, sep= " + "))
+  return(ll_stmt)
 }
 
 add_varying_term_rand_eff_term_to_ll_stmt <- function(parsed_term, ll_stmt)

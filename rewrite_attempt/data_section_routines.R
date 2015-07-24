@@ -19,9 +19,8 @@ add_resp_term_to_data_section_for_gaussian <- function(parsed_resp_term, data_se
   resp_var_name <- parsed_resp_term$"data_terms"[[1]]
   resp_var_size <- parsed_resp_term$"size"[[1]]
   
-  data_section <- paste(data_section, create_constant_data_line(resp_var_size, "int", "<lower=1>"), sep = "")
   data_section <- paste(data_section, create_array_data_line(resp_var_name, "real", resp_var_size), sep = "")
-
+  data_section <- paste(create_constant_data_line(resp_var_size, "int", "<lower=1>"), data_section, sep = "")
   return(data_section)
 }
 
@@ -31,9 +30,9 @@ add_resp_term_to_data_section_for_binomial <- function(parsed_resp_term, data_se
   resp_var_sample_size_name <- parsed_resp_term$"data_terms"[[parsed_resp_term$"special_vectors_index"$"sample_size"]]
   resp_var_size <- parsed_resp_term$"size"[[1]]
   
-  data_section <- paste(data_section, create_constant_data_line(resp_var_size, "int", "<lower=1>"), sep = "")
   data_section <- paste(data_section, create_array_data_line(resp_var_name, "int", resp_var_size), sep = "")
   data_section <- paste(data_section, create_array_data_line(resp_var_sample_size_name, "int", resp_var_size), sep = "")
+  data_section <- paste(create_constant_data_line(resp_var_size, "int", "<lower=1>"), data_section, sep = "")
   
   return(data_section)
 }

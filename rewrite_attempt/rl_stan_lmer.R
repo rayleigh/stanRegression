@@ -1,10 +1,10 @@
-source('~/Documents/Gelman Research/Replication/data_section_routines.R')
-source('~/Documents/Gelman Research/Replication/parse_terms.R')
-source('~/Documents/Gelman Research/Replication/param_section_routine.R')
-source('~/Documents/Gelman Research/Replication/trans_param_section_routine.R')
-source('~/Documents/Gelman Research/Replication/model_section_routine.R')
-source('~/Documents/Gelman Research/Replication/ll_stmt_routine.R')
-source('~/Documents/Gelman Research/Replication/generated_section_routine.R')
+source('~/Documents/Gelman Research/stanRegression rewrite/data_section_routines.R')
+source('~/Documents/Gelman Research/stanRegression rewrite/parse_terms.R')
+source('~/Documents/Gelman Research/stanRegression rewrite/param_section_routine.R')
+source('~/Documents/Gelman Research/stanRegression rewrite/trans_param_section_routine.R')
+source('~/Documents/Gelman Research/stanRegression rewrite/model_section_routine.R')
+source('~/Documents/Gelman Research/stanRegression rewrite/ll_stmt_routine.R')
+source('~/Documents/Gelman Research/stanRegression rewrite/generated_section_routine.R')
 
 stan_lmer <- function(user_formula, data, family = "gaussian",
                       default_prior = "dnorm(0,1)", loc_scale_transform = TRUE,
