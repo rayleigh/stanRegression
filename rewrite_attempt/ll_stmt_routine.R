@@ -1,11 +1,9 @@
 add_fixed_eff_term_to_ll_stmt <- function(parsed_fixed_term, ll_stmt)
 {
-  for (i in 1:parsed_fixed_term$"num_terms")
-  {
-    model_segment <- paste(parsed_fixed_term$"data_terms"[[i]], "[i]", sep = "")
-    model_segment <- paste(parsed_fixed_term$"param_terms"[[i]], model_segment, sep = " * ")
-    ll_stmt <- paste(ll_stmt, model_segment, sep= " + ")
-  }
+  model_segment <- paste(parsed_fixed_term$"data_terms"[[1]], "[i]", sep = "")
+  model_segment <- paste(parsed_fixed_term$"param_terms"[[1]], model_segment, sep = " * ")
+  ll_stmt <- paste(ll_stmt, model_segment, sep= " + ")
+
   return(ll_stmt)
 }
 

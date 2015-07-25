@@ -27,7 +27,8 @@ stan_lmer <- function(user_formula, data, family = "gaussian",
 create_stan_code_sections_and_data_list <- function(predictor_terms, resp_term, add_intercept, family, data_matrix)
 {
   
-  predictor_info <- parse_and_add_predictor_terms_to_sections_and_data_list(predictor_terms, data_matrix, list())
+  organized_predictor_term_info <- gather_and_organize_predictor_terms(predictor_terms, data_matrix)
+  predictor_info <- parse_and_add_predictor_terms_to_sections_and_data_list(organized_predictor_term_info, data_matrix, list())
   code_section_list <- predictor_info$"code"
   stan_data_list <- predictor_info$"stan_data_list"
   
@@ -37,6 +38,7 @@ create_stan_code_sections_and_data_list <- function(predictor_terms, resp_term, 
   }
   else
   {
+    #Remove the starting + sign
     code_section_list <- gsub("^ \\+ ", "", code_section_list$ll_stmt, perl = T)
   }
 
@@ -51,24 +53,59 @@ create_stan_code_sections_and_data_list <- function(predictor_terms, resp_term, 
   
 }
 
-#Also builds the data needed to run Stan later
-parse_and_add_predictor_terms_to_sections_and_data_list <- function(predictor_terms, data_matrix, code_section_list)
+gather_and_organize_predictor_terms <- function(predictor_terms_list, data_matrix)
 {
-  stan_data_list <- list()
-  stan_formula <- "~ -1"
+  ran_eff_terms_list <- list()
+  fixed_eff_formula <- "~ 1"
   
-  for (i in 1:length(predictor_terms))
+  for (i in 1:length(predictor_terms_list))
   {
-    predictor_term <- predictor_terms[[i]]
+    predictor_term <- predictor_terms_list[[i]]
     if (grepl(" | ", predictor_term, fixed = T))
     {
-      new_info <- parse_and_add_random_eff_to_sections_and_data_list(predictor_term, data_matrix, code_section_list)
-      code_section_list <- new_info$code
-      stan_data_list <- c(stan_data_list, new_info$"stan_data_list")
+      ran_eff_terms_list <- c(ran_eff_terms_list, expand_slash(predictor_term))
     }
     else
     {
-      new_info <- parse_and_add_fixed_eff_to_sections_and_data_list(predictor_term, data_matrix, code_section_list)
+      fixed_eff_formula <- paste(fixed_eff_formula, predictor_term, sep = " + ")
+    }
+  }
+  
+  fixed_eff_data_matrix <- as.data.frame(model.matrix(formula(fixed_eff_formula), data_matrix))
+  
+  return(list("ran_eff_list" = ran_eff_terms_list, "fixed_eff_list" = as.list(fixed_eff_data_matrix)))
+}
+
+#Also builds the data needed to run Stan later
+parse_and_add_predictor_terms_to_sections_and_data_list <- function(organized_predictor_term_info, data_matrix, code_section_list)
+{
+  stan_data_list <- list()
+  
+  #Parse random effects
+  ran_eff_term_list <- organized_predictor_term_info$"ran_eff_list"
+  num_ran_eff_terms <- length(ran_eff_term_list)
+  if (num_ran_eff_terms > 0)
+  {
+    for (i in 1:num_ran_eff_terms)
+    {
+      ran_eff_term <- ran_eff_term_list[[i]]
+      new_info <- parse_and_add_random_eff_to_sections_and_data_list(ran_eff_term, data_matrix, code_section_list)
+      code_section_list <- new_info$code
+      stan_data_list <- c(stan_data_list, new_info$"stan_data_list")
+    }
+  }
+  
+  #Parse fixed effects
+  fixed_eff_list <- organized_predictor_term_info$"fixed_eff_list"
+  fixed_eff_term_list <- names(fixed_eff_list)
+  num_fixed_eff_terms <- length(fixed_eff_term_list)
+  if (num_fixed_eff_terms > 1)
+  {
+    for (i in 2:length(fixed_eff_term_list))
+    {
+      fixed_eff_term <- fixed_eff_term_list[i]
+      fixed_eff_term_data <- fixed_eff_list[[i]]
+      new_info <- parse_and_add_fixed_eff_to_sections_and_data_list(fixed_eff_term, fixed_eff_term_data, code_section_list)
       code_section_list <- new_info$code
       stan_data_list <- c(stan_data_list, new_info$"stan_data_list")
     }
@@ -79,27 +116,20 @@ parse_and_add_predictor_terms_to_sections_and_data_list <- function(predictor_te
 
 parse_and_add_random_eff_to_sections_and_data_list <- function(predictor_term, data_matrix, code_section_list)
 {
-  parsed_term_list <- parse_random_eff_term(predictor_term, data_matrix)
-  stan_data_list <- list()
-  
-  for (i in 1:length(parsed_term_list))
-  {
-    parsed_term <- parsed_term_list[[i]]
-    
-    code_section_list$data_section <- add_rand_eff_term_to_data_section(parsed_term, code_section_list$data_section)
-    code_section_list$param_section <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_param_section(parsed_term,code_section_list$param_section)", sep = "")))
-    code_section_list$trans_param_section <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_trans_param_section(parsed_term,code_section_list$trans_param_section)", sep = "")))
-    code_section_list$model_section <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_model_section(parsed_term,code_section_list$model_section)", sep = "")))
-    code_section_list$ll_stmt <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_ll_stmt(parsed_term,code_section_list$ll_stmt)", sep = "")))
+  parsed_term <- parse_random_eff_term(predictor_term, data_matrix)
 
-    stan_data_list <- c(stan_data_list, parsed_term$"stan_data_list")
-  }
-  return(list("code" = code_section_list, "stan_data_list" = stan_data_list))
+  code_section_list$data_section <- add_rand_eff_term_to_data_section(parsed_term, code_section_list$data_section)
+  code_section_list$param_section <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_param_section(parsed_term,code_section_list$param_section)", sep = "")))
+  code_section_list$trans_param_section <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_trans_param_section(parsed_term,code_section_list$trans_param_section)", sep = "")))
+  code_section_list$model_section <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_model_section(parsed_term,code_section_list$model_section)", sep = "")))
+  code_section_list$ll_stmt <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_ll_stmt(parsed_term,code_section_list$ll_stmt)", sep = "")))
+
+  return(list("code" = code_section_list, "stan_data_list" = parsed_term$"stan_data_list"))
 }
 
-parse_and_add_fixed_eff_to_sections_and_data_list <- function(predictor_term, data_matrix, code_section_list)
+parse_and_add_fixed_eff_to_sections_and_data_list <- function(predictor_term, data_col, code_section_list)
 {
-  parsed_term <- parse_fixed_eff_term(predictor_term, data_matrix)
+  parsed_term <- parse_fixed_eff_term(predictor_term, data_col)
   
   code_section_list$data_section <- add_fixed_eff_term_to_data_section(parsed_term, code_section_list$data_section)
   code_section_list$param_section <- add_fixed_eff_term_to_param_section(parsed_term,code_section_list$param_section)

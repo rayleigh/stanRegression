@@ -1,45 +1,21 @@
-parse_fixed_eff_term <- function(predictor_term, data_matrix)
+parse_fixed_eff_term <- function(predictor_term, data_col)
 {
   parsed_term <- list()
   
-  fixed_eff_formula <- formula(paste("~ 0", predictor_term, sep = " + "))
-  fixed_eff_data_matrix <- as.data.frame(model.matrix(fixed_eff_formula, data_matrix))
-  fixed_eff_terms_list <- colnames(fixed_eff_data_matrix)
-  
-  parsed_term$"data_terms" <- list()
-  parsed_term$"stan_data_type" <- list()
-  parsed_term$"size" <- list()
-  parsed_term$"param_terms" <- list()
-  parsed_term$"num_terms" <- length(fixed_eff_terms_list)
-  if (parsed_term$"num_terms" > 1)
-  {
-    parsed_term$"num_terms" = parsed_term$"num_terms" - 1  
-  }
-  for (i in 1:parsed_term$"num_terms")
-  {
-    term_template_name <- clean_term_name(fixed_eff_terms_list[i])
+  term_template_name <- clean_term_name(predictor_term)
     
-    #Data section
-    parsed_term$"data_terms"[[i]] <- term_template_name
-    parsed_term$"stan_data_type"[[i]] <- determine_stan_type(typeof(data_matrix$predictor_term))
-    parsed_term$"size"[[i]] <- "N"
+  #Data section
+  parsed_term$"data_terms"[[1]] <- term_template_name
+  parsed_term$"stan_data_type"[[1]] <- determine_stan_type(typeof(data_col))
+  parsed_term$"size"[[1]] <- "N"
     
-    #Param section
-    parsed_term$"param_terms"[[i]] <- attach_prefix(term_template_name, "beta")
+  #Param section
+  parsed_term$"param_terms"[[1]] <- attach_prefix(term_template_name, "beta")
     
-    colnames(fixed_eff_data_matrix)[i] <- term_template_name;
-  }
-
-  parsed_term$"stan_data_list" <- as.list(fixed_eff_data_matrix)
+  parsed_term$"stan_data_list" <- list()
+  parsed_term$"stan_data_list"[[term_template_name]] <- data_col  
 
   return(parsed_term)    
-}
-
-parse_random_eff_term <- function(predictor_term, data_matrix)
-{
-  predictor_term_list <- expand_slash(predictor_term)
-  
-  return(lapply(predictor_term_list, function(predictor_term) parse_a_rand_eff_term(predictor_term, data_matrix)))
 }
 
 expand_slash <- function(original_term)
@@ -62,23 +38,23 @@ expand_slash <- function(original_term)
   }
 }
 
-parse_a_rand_eff_term <- function(original_term, data_matrix)
+parse_random_eff_term <- function(predictor_term, data_matrix)
 {
   parsed_term <- list()
     
-  split_terms_list <- get_terms_on_both_sides(original_term, " + ")
+  split_terms_list <- get_terms_on_both_sides(predictor_term, " + ")
   var_terms <- split_terms_list[["right_term"]]
   intercept_term <- split_terms_list[["left_term"]]
 
   if (intercept_term == var_terms)
   {
     var_terms <- gsub( "1 |" , "Intercept |" , var_terms , fixed=TRUE )
-    parsed_term <- fill_info_for_random_eff_term(var_terms, original_term, "vector", parsed_term, data_matrix)
+    parsed_term <- fill_info_for_random_eff_term(var_terms, predictor_term, "vector", parsed_term, data_matrix)
     parsed_term$"ran_eff_type" <- "varying_term"  
     
   } else if (intercept_term == "1") {
   
-    parsed_term <- fill_info_for_random_eff_term(var_terms, original_term, "matrix", parsed_term, data_matrix)
+    parsed_term <- fill_info_for_random_eff_term(var_terms, predictor_term, "matrix", parsed_term, data_matrix)
     parsed_term$"ran_eff_type" <- "varying_term_with_intercept"
       
   } else {
@@ -167,6 +143,7 @@ coerce_index <- function( x )
 
 clean_term_name <- function(term_name) {
   term_name <- gsub( "." , "_" , term_name , fixed=TRUE )
+  term_name <- gsub( "^" , "_" , term_name , fixed=TRUE )
   term_name <- gsub( ":" , "_X_" , term_name , fixed=TRUE )
   term_name <- gsub( "|" , "_by_" , term_name , fixed=TRUE )
   term_name <- gsub( "(" , "" , term_name , fixed=TRUE )

@@ -1,9 +1,7 @@
 add_fixed_eff_term_to_model_section <- function(parsed_fixed_term, model_section)
 {
-  for (i in 1:parsed_fixed_term$"num_terms")
-  {
-    model_section <- paste(model_section, create_prior_line(parsed_fixed_term$"param_terms"[[i]], "normal(0, 10)"), sep = "") 
-  }
+  model_section <- paste(model_section, create_prior_line(parsed_fixed_term$"param_terms"[[1]], "normal(0, 10)"), sep = "") 
+
   return(model_section)
 }
 
