@@ -5,11 +5,11 @@ organize_random_effect_terms <- function(predictor_term, organized_ran_eff_list)
     predictor_term <- expand_double_bar(predictor_term)
   }
   
-  varying_terms_list <- get_terms_on_both_sides(predictor_term, " | ")
-  group_term <- varying_terms_list[["right_term"]]
+  split_terms_list <- get_terms_on_both_sides(predictor_term, " | ")
+  group_term <- split_terms_list[["right_term"]]
   group_terms_list <- expand_slash(group_term)
   
-  varying_term <- varying_terms_list[["left_term"]]
+  varying_term <- split_terms_list[["left_term"]]
   varying_terms_list <- strsplit(varying_term, " + ", fixed = T)[[1]]
   expanded_varying_terms_list <- as.list(unlist(lapply(varying_terms_list, expand_slash)))
   expanded_varying_terms_list <- add_intercept_to_list(expanded_varying_terms_list)
