@@ -307,6 +307,7 @@ glimmer <- function( formula , data , family="gaussian" , prefix=c("b_","v_") , 
     if ( num_group_vars > 0 ) {
     for ( i in 1:num_group_vars ) {
       group_var <- undot(names(pf$ranef)[i])
+      print(group_var)
       corr_members <- list()
       uncorr_members <- list()
       ranef <- c(pf$ranef[[i]]$corr,pf$ranef[[i]]$uncorr)
@@ -385,6 +386,6 @@ glimmer <- function( formula , data , family="gaussian" , prefix=c("b_","v_") , 
     pf$dat[['Intercept']] <- NULL
 
     # result
-    invisible(list(f=flist2,d=pf$dat))
+    invisible(list(f=flist2,d=pf$dat, pf=pf))
 }
 
