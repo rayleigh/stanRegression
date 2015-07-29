@@ -10,10 +10,11 @@ add_fixed_eff_term_to_ll_stmt <- function(parsed_fixed_term, ll_stmt)
 add_varying_term_rand_eff_term_to_ll_stmt <- function(parsed_term, ll_stmt)
 {
   model_segment <- paste(parsed_term$"trans_param_terms"[[1]], "[", parsed_term$"data_terms"[[1]], "[i]]", sep = "")
+  varying_term <- parsed_term$"varying_terms"[[1]]
   
-  if (parsed_term$"component_terms"[[1]] != "Intercept")
+  if (varying_term != "Intercept")
   {
-    model_segment_data_var <- paste(parsed_term$"component_terms"[[1]], "[i]", sep = "")
+    model_segment_data_var <- paste(varying_term, "[i]", sep = "")
     model_segment <- paste(model_segment, model_segment_data_var, sep = " * ")
   }
 
@@ -24,13 +25,21 @@ add_varying_term_with_intercept_rand_eff_term_to_ll_stmt <- function(parsed_term
 {
   model_segment <- paste(parsed_term$"trans_param_terms"[[1]], "[", parsed_term$"data_terms"[[1]], "[i], ", sep = "")
   
-  model_segment_intercept <- paste(model_segment,  "1]", sep = "")
+  for (i in 1:parsed_term$"num_varying_terms")
+  {
+    model_segment_var <- paste(model_segment, i, "]", sep = "")
+    varying_term <- parsed_term$"varying_terms"[[i]]
+    
+    if (varying_term != "Intercept")
+    {
+      model_segment_var <- paste(model_segment_var, varying_term, sep = " * ")
+      model_segment_var <- paste(model_segment_var, "[i]", sep = "")
+    }
+
+    ll_stmt <- paste(ll_stmt, model_segment_var, sep = " + ")
+  }
   
-  model_segment_var <- paste(model_segment, "2]", sep = "")
-  model_segment_var <- paste(model_segment_var, parsed_term$"component_terms"[[1]], sep = " * ")
-  model_segment_var <- paste(model_segment_var, "[i]", sep = "")
-  
-  return(paste(ll_stmt, model_segment_intercept, model_segment_var, sep = " + "))
+  return(ll_stmt)
 }
 
 add_intercept_to_ll_stmt <- function(ll_stmt)

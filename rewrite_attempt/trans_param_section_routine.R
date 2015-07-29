@@ -9,7 +9,7 @@ add_varying_term_rand_eff_term_to_trans_param_section <- function(parsed_term, t
 
 add_varying_term_with_intercept_rand_eff_term_to_trans_param_section <- function(parsed_term, trans_param_section)
 {
-  trans_param_section <- paste(trans_param_section, create_param_matrix_line(parsed_term$"trans_param_terms"[[1]], parsed_term$"data_terms"[[2]], 2), sep = "")
+  trans_param_section <- paste(trans_param_section, create_param_matrix_line(parsed_term$"trans_param_terms"[[1]], parsed_term$"data_terms"[[2]], parsed_term$"num_varying_terms"), sep = "")
   
   cholesky_opt_term1 <- paste("(diag_pre_multiply(", parsed_term$"param_terms"[[1]], ", ", parsed_term$"param_terms"[[3]], ")", sep = "")
   cholesky_opt_term2 <- paste(parsed_term$"param_terms"[[2]], ')\'', sep = "")

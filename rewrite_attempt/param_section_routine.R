@@ -13,9 +13,9 @@ add_varying_term_rand_eff_term_to_param_section <- function(parsed_term, param_s
 
 add_varying_term_with_intercept_rand_eff_term_to_param_section <- function(parsed_term, param_section)
 {
-  param_section <- paste(param_section, create_param_vector_line(parsed_term$"param_terms"[[1]],"2", "<lower=0>"), sep = "")
-  param_section <- paste(param_section, create_param_matrix_line(parsed_term$"param_terms"[[2]], "2", parsed_term$"data_terms"[[2]]), sep = "")
-  param_section <- paste(param_section, create_param_vector_line(parsed_term$"param_terms"[[2]], "2", var_type = "cholesky_factor_corr"), sep = "")
+  param_section <- paste(param_section, create_param_vector_line(parsed_term$"param_terms"[[1]], parsed_term$"num_varying_term", "<lower=0>"), sep = "")
+  param_section <- paste(param_section, create_param_matrix_line(parsed_term$"param_terms"[[2]], parsed_term$"num_varying_term", parsed_term$"data_terms"[[2]]), sep = "")
+  param_section <- paste(param_section, create_param_vector_line(parsed_term$"param_terms"[[2]], parsed_term$"num_varying_term", var_type = "cholesky_factor_corr"), sep = "")
   return(param_section)
 }
 

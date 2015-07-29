@@ -18,84 +18,57 @@ parse_fixed_eff_term <- function(predictor_term, data_col)
   return(parsed_term)    
 }
 
-expand_slash <- function(original_term)
+parse_random_eff_term <- function(group_term, varying_term_list, data_matrix)
 {
-  var_terms <- get_terms_on_right_side(original_term, sep_symbol = " + ")
-  varying_terms <- get_terms_on_right_side(var_terms, sep_symbol = " | ")
+  parsed_term <- list()
   
-  if(regexec(pattern = '/', fixed = TRUE, text = varying_terms) == -1) 
+  varying_term_list <- unique(varying_term_list)
+  varying_term_list <- lapply(varying_term_list, clean_term_name)
+  parsed_term$"varying_terms" <- varying_term_list
+  parsed_term$"num_varying_terms" <- length(varying_term_list)
+
+  if (parsed_term$"num_varying_terms" == 1)
   {
-    return(list(original_term))
+    parsed_term <- fill_info_for_random_eff_term(group_term, "vector", parsed_term, data_matrix)
+    parsed_term$"ran_eff_type" <- "varying_term"  
   } 
   else 
   {
-    var_list <- strsplit(varying_terms,split = '/',fixed=TRUE)[[1]]
-    var_length <- length(var_list)
-    if(var_length > 2) stop('Only supports maximum of 1 "/"')
-    var_term <- var_list[1]
-    interact_ranef_term <- paste(varying_var, var_list[2], sep=':')
-    return(list(var_term, interact_ranef_term))
-  }
-}
-
-parse_random_eff_term <- function(predictor_term, data_matrix)
-{
-  parsed_term <- list()
-    
-  split_terms_list <- get_terms_on_both_sides(predictor_term, " + ")
-  var_terms <- split_terms_list[["right_term"]]
-  intercept_term <- split_terms_list[["left_term"]]
-
-  if (intercept_term == var_terms)
-  {
-    var_terms <- gsub( "1 |" , "Intercept |" , var_terms , fixed=TRUE )
-    parsed_term <- fill_info_for_random_eff_term(var_terms, predictor_term, "vector", parsed_term, data_matrix)
-    parsed_term$"ran_eff_type" <- "varying_term"  
-    
-  } else if (intercept_term == "1") {
-  
-    parsed_term <- fill_info_for_random_eff_term(var_terms, predictor_term, "matrix", parsed_term, data_matrix)
+    parsed_term <- fill_info_for_random_eff_term(group_term, "matrix", parsed_term, data_matrix)
     parsed_term$"ran_eff_type" <- "varying_term_with_intercept"
-      
-  } else {
-  
-    stop("Invalid expression")  
-    
-  }
+  } 
     
   return(parsed_term)
 }
 
-fill_info_for_random_eff_term <- function(var_terms, original_term, term_type, parsed_term, data_matrix)
+fill_info_for_random_eff_term <- function(group_term, term_type, parsed_term, data_matrix)
 {
-  split_var_terms_list <- get_terms_on_both_sides(var_terms, " | ")
-  varying_term <- split_var_terms_list[["right_term"]]
-  term_to_vary <- clean_term_name(split_var_terms_list[["left_term"]])
+  group_term_template <- clean_term_name(group_term)
+  varying_term_template <- paste(parsed_term$varying_terms, collapse = "_")
   
-  varying_template_name <- clean_term_name(varying_term)
-  varying_term_size <- paste("N", varying_template_name, sep = "_")
-  var_terms_template_name <- attach_prefix(clean_term_name(var_terms), term_type)
+  group_term_size <- paste("N", group_term_template, sep = "_")
+  term_name_template <- paste(varying_term_template, "by", group_term_template, sep = "_")
+  term_name_template <- attach_prefix(term_name_template, term_type)
   
   #Data section info
-  parsed_term$"data_terms" <- list(varying_template_name, varying_term_size)
+  parsed_term$"data_terms" <- list(group_term_template, group_term_size)
   parsed_term$"size" <- list("N", "")
 
   #Parameter section info
-  parsed_term$"param_terms" <- list(paste("sigma", var_terms_template_name, sep = "_"), paste(var_terms_template_name, "std", sep = "_"))
+  parsed_term$"param_terms" <- list(paste("sigma", term_name_template, sep = "_"), paste(term_name_template, "std", sep = "_"))
   if (term_type == "matrix")
   {
-    parsed_term$"param_terms"[[(length(parsed_term$"param_terms") + 1)]] <- paste("L_Rho", var_terms_template_name, sep = "_")
+    parsed_term$"param_terms"[[(length(parsed_term$"param_terms") + 1)]] <- paste("L_Rho", term_name_template, sep = "_")
   }
   
   #Transform parameter section info
-  parsed_term$"trans_param_terms" <- list(var_terms_template_name)
+  parsed_term$"trans_param_terms" <- list(term_name_template)
   
   #Stan data list info
   parsed_term$"stan_data_list" <- list()
-  parsed_term$"stan_data_list"[[varying_template_name]] <- coerce_index(with(data_matrix, eval(parse(text = varying_term))))
-  parsed_term$"stan_data_list"[[varying_term_size]] <- length(unique(parsed_term$"stan_data_list"[[varying_template_name]]))
+  parsed_term$"stan_data_list"[[group_term_template]] <- coerce_index(with(data_matrix, eval(parse(text = group_term))))
+  parsed_term$"stan_data_list"[[group_term_size]] <- length(unique(parsed_term$"stan_data_list"[[group_term_template]]))
 
-  parsed_term$"component_terms" <- list(term_to_vary, varying_template_name)
   return(parsed_term)
 }
 
@@ -171,20 +144,3 @@ determine_stan_type <- function(term_type)
   }
 }
 
-get_terms_on_both_sides <- function(term_str, sep_symbol)
-{
-  terms <- strsplit(term_str, split = sep_symbol,fixed=TRUE)[[1]]
-  return(list("left_term" = terms[1], "right_term" = terms[length(terms)]))
-}
-
-get_terms_on_right_side <- function(term_str, sep_symbol)
-{
-  terms <- strsplit(term_str, split = sep_symbol,fixed=TRUE)[[1]]
-  return(terms[length(terms)])
-}
-
-get_terms_on_left_side <- function(term_str, sep_symbol)
-{
-  terms <- strsplit(term_str,split = sep_symbol,fixed=TRUE)[[1]]
-  return(terms[1])
-}
