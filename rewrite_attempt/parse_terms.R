@@ -18,30 +18,48 @@ parse_fixed_eff_term <- function(predictor_term, data_col)
   return(parsed_term)    
 }
 
-parse_random_eff_term <- function(group_term, varying_term_list, data_matrix)
+parse_random_eff_term <- function(group_term, varying_terms_str, data_matrix, covered_fixed_eff_terms_list)
 {
   parsed_term <- list()
   
-  varying_term_list <- unique(varying_term_list)
-  varying_term_list <- lapply(varying_term_list, clean_term_name)
-  parsed_term$"varying_terms" <- varying_term_list
-  parsed_term$"num_varying_terms" <- length(varying_term_list)
-
+  parsed_term <- fill_info_for_random_eff_varying_terms(parsed_term, varying_terms_str, data_matrix, covered_fixed_eff_terms_list)
+  
   if (parsed_term$"num_varying_terms" == 1)
   {
-    parsed_term <- fill_info_for_random_eff_term(group_term, "vector", parsed_term, data_matrix)
+    parsed_term <- fill_info_for_random_eff_group_term(group_term, "vector", parsed_term, data_matrix)
     parsed_term$"ran_eff_type" <- "varying_term"  
   } 
   else 
   {
-    parsed_term <- fill_info_for_random_eff_term(group_term, "matrix", parsed_term, data_matrix)
+    parsed_term <- fill_info_for_random_eff_group_term(group_term, "matrix", parsed_term, data_matrix)
     parsed_term$"ran_eff_type" <- "varying_term_with_intercept"
   } 
     
   return(parsed_term)
 }
 
-fill_info_for_random_eff_term <- function(group_term, term_type, parsed_term, data_matrix)
+fill_info_for_random_eff_varying_terms <- function(parsed_term, varying_terms_str, data_matrix, covered_fixed_eff_terms_list)
+{
+  #Varying term section info
+  varying_terms_info <- get_varying_terms_names_and_data(varying_terms_str, data_matrix, covered_fixed_eff_terms_list)
+  varying_terms_list <- varying_terms_info$"terms_list"
+  parsed_term$"varying_terms" <- varying_terms_list
+  parsed_term$"num_varying_terms" <- length(varying_terms_list)
+  
+  missing_fixed_eff_info <- varying_terms_info$"missing_fixed_eff_info"
+
+  #Data section
+  parsed_term$"data_terms" <- names(missing_fixed_eff_info$"missing_data")
+  parsed_term$"stan_data_type" <- missing_fixed_eff_info$"missing_type"
+  parsed_term$"size" <- missing_fixed_eff_info$"missing_size"
+  
+  #Stan data information
+  parsed_term$"stan_data_list" <- missing_fixed_eff_info$"missing_data"
+  
+  return(parsed_term)
+}
+
+fill_info_for_random_eff_group_term <- function(group_term, term_type, parsed_term, data_matrix)
 {
   group_term_template <- clean_term_name(group_term)
   varying_term_template <- paste(parsed_term$varying_terms, collapse = "_")
@@ -51,9 +69,10 @@ fill_info_for_random_eff_term <- function(group_term, term_type, parsed_term, da
   term_name_template <- attach_prefix(term_name_template, term_type)
   
   #Data section info
-  parsed_term$"data_terms" <- list(group_term_template, group_term_size)
-  parsed_term$"size" <- list("N", "")
-
+  parsed_term$"data_terms" <- c(list(group_term_template, group_term_size), parsed_term$"data_terms")
+  parsed_term$"size" <- c(list("N", ""), parsed_term$"size")
+  parsed_term$"stan_data_type" <- c(list("", ""), parsed_term$"stan_data_type")
+  
   #Parameter section info
   parsed_term$"param_terms" <- list(paste("sigma", term_name_template, sep = "_"), paste(term_name_template, "std", sep = "_"))
   if (term_type == "matrix")
@@ -64,8 +83,7 @@ fill_info_for_random_eff_term <- function(group_term, term_type, parsed_term, da
   #Transform parameter section info
   parsed_term$"trans_param_terms" <- list(term_name_template)
   
-  #Stan data list info
-  parsed_term$"stan_data_list" <- list()
+  #Stan data list info for group term
   parsed_term$"stan_data_list"[[group_term_template]] <- coerce_index(with(data_matrix, eval(parse(text = group_term))))
   parsed_term$"stan_data_list"[[group_term_size]] <- length(unique(parsed_term$"stan_data_list"[[group_term_template]]))
 
@@ -105,8 +123,50 @@ parse_resp_term <- function(resp_term, data_matrix)
   stan_data_list[[size_term]] <- length(stan_data_list[[1]])
   parsed_resp_term$"stan_data_list" <- stan_data_list
   
-
   return(parsed_resp_term)
+}
+
+get_varying_terms_names_and_data <- function(terms_formula_str, data_matrix, fixed_eff_list)
+{
+  varying_terms_list <- list()
+  if (grepl("Intercept( \\+ )*", terms_formula_str, perl = T))
+  {
+    varying_terms_list[[1]] <- "Intercept"
+    terms_formula_str <- gsub("Intercept( \\+ )*", "", terms_formula_str, perl = T)
+  }
+
+  if (terms_formula_str != "")
+  {
+    terms_formula <- formula(paste("~ 1", terms_formula_str, sep = " + "))
+    terms_formula_matrix <- as.data.frame(model.matrix(terms_formula, data_matrix))
+    
+    varying_terms_list <- c(varying_terms_list, colnames(terms_formula_matrix)[-1])
+  }
+
+  missing_fixed_terms_list <- varying_terms_list[!varying_terms_list %in% fixed_eff_list]
+  varying_terms_list <- lapply(varying_terms_list, clean_term_name)
+    
+  return(list("terms_list" = varying_terms_list, 
+              "missing_fixed_eff_info" = get_missing_fixed_eff_info(missing_fixed_terms_list, terms_formula_matrix)))
+}
+
+get_missing_fixed_eff_info <- function(missing_fixed_eff_terms_list, data_matrix)
+{
+  num_missing_fixed_terms <- length(missing_fixed_eff_terms_list)
+  missing_fixed_terms_data <- list()
+  missing_fixed_terms_type <- list()
+  missing_fixed_terms_size <- list()
+  if (num_missing_fixed_terms > 0)
+  {
+    for (i in 1:num_missing_fixed_terms)
+    {
+      missing_fixed_term <- clean_term_name(missing_fixed_eff_terms_list[[i]])
+      missing_fixed_terms_data[[missing_fixed_term]] <- data_matrix[, missing_fixed_term] 
+      missing_fixed_terms_type <- determine_stan_type(typeof(missing_fixed_terms_data[[missing_fixed_term]]))
+      missing_fixed_terms_size <- "N"
+    }
+  }
+  return(list("missing_data" = missing_fixed_terms_data, "missing_type" = missing_fixed_terms_type, "missing_size" = missing_fixed_terms_size))
 }
 
 coerce_index <- function( x ) 

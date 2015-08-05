@@ -9,23 +9,21 @@ organize_random_effect_terms <- function(predictor_term, organized_ran_eff_list)
   group_term <- split_terms_list[["right_term"]]
   group_terms_list <- expand_slash(group_term)
   
-  varying_term <- split_terms_list[["left_term"]]
-  varying_terms_list <- strsplit(varying_term, " + ", fixed = T)[[1]]
-  expanded_varying_terms_list <- as.list(unlist(lapply(varying_terms_list, expand_slash)))
-  expanded_varying_terms_list <- add_intercept_to_list(expanded_varying_terms_list)
-  expanded_varying_terms_list <- remove_numeric_intercept_terms_from_list(expanded_varying_terms_list)
+  varying_terms_formula_str <- split_terms_list[["left_term"]]
+  varying_terms_formula_str <- gsub(" - ", " + -", varying_terms_formula_str, fixed = T)
   
   for (i in 1:length(group_terms_list))
   {
     grp_term <- group_terms_list[[i]]
+    
     if (exists(grp_term, where = organized_ran_eff_list))
     {
-      organized_ran_eff_list[[grp_term]] <- c(organized_ran_eff_list[[grp_term]], expanded_varying_terms_list)
+      varying_terms_formula_str <- paste(organized_ran_eff_list[[grp_term]], varying_terms_formula_str, sep = " + ")
     }
-    else
-    {
-      organized_ran_eff_list[[grp_term]] <- expanded_varying_terms_list
-    }
+    
+    varying_terms_formula_str <- add_intercept_term_to_formula_str(varying_terms_formula_str)
+    varying_terms_formula_str <- remove_intercept_terms(varying_terms_formula_str)
+    organized_ran_eff_list[[grp_term]] <- varying_terms_formula_str
   }
   
   return(organized_ran_eff_list)
@@ -53,33 +51,31 @@ expand_slash <- function(slash_term)
   return(expanded_terms_list)
 }
 
-add_intercept_term_to_list <- function(terms_list)
+remove_intercept_terms <- function(terms_formula_str)
 {
-  add_intercept = !("-1" %in% terms_list | "0" %in% terms_list)
-  intercept_in_list = "Intercept" %in% terms_list
-  
-  if (add_intercept && !intercept_in_list)
-  {
-    terms_list <- c(list("Intercept"), terms_list)
-  }
-  
-  return(terms_list)
+  no_intercept_terms_formula_str <- terms_formula_str
+  no_intercept_terms_formula_str <- gsub("-1 + ", "", no_intercept_terms_formula_str, fixed = T)
+  no_intercept_terms_formula_str <- gsub(" + -1", "", no_intercept_terms_formula_str, fixed = T)
+  no_intercept_terms_formula_str <- gsub("0 + ", "", no_intercept_terms_formula_str, fixed = T)
+  no_intercept_terms_formula_str <- gsub(" + 0", "", no_intercept_terms_formula_str, fixed = T)
+  no_intercept_terms_formula_str <- gsub("1 + ", "", no_intercept_terms_formula_str, fixed = T)
+  no_intercept_terms_formula_str <- gsub(" + 1", "", no_intercept_terms_formula_str, fixed = T)
+  return(no_intercept_terms_formula_str)
 }
 
-remove_numeric_intercept_terms_from_list <- function(terms_list)
+add_intercept_term_to_formula_str <- function(terms_formula_str)
 {
-  numeric_intercept_term_list <- c("-1", "0", "1")
+  no_intercept = (grepl("( \\+ )*-1( \\+ )*", terms_formula_str, perl = T) | grepl("( \\+ )*0( \\+ )*", terms_formula_str, perl = T))
+  add_intercept = grepl("( \\+ )*1( \\+ )", terms_formula_str, perl = T)
   
-  for (i in 1:length(numeric_intercept_term_list))
+  has_intercept = grepl("Intercept", terms_formula_str, fixed = T)
+  
+  if (!no_intercept & !has_intercept)
   {
-    numeric_intercept_term <- numeric_intercept_term_list[i]
-    if (numeric_intercept_term %in% terms_list)
-    {
-      terms_list <- terms_list[terms_list != numeric_intercept_term]
-    }
+    terms_formula_str <- paste("Intercept", terms_formula_str, sep = " + ")
   }
-
-  return(terms_list)
+  
+  return(terms_formula_str)
 }
 
 get_terms_on_both_sides <- function(term_str, sep_symbol)

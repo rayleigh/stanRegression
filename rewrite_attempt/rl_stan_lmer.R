@@ -1,11 +1,12 @@
-source('~/Documents/Gelman Research/stanRegression rewrite/data_section_routines.R')
-source('~/Documents/Gelman Research/stanRegression rewrite/organize_terms.R')
-source('~/Documents/Gelman Research/stanRegression rewrite/parse_terms.R')
-source('~/Documents/Gelman Research/stanRegression rewrite/param_section_routine.R')
-source('~/Documents/Gelman Research/stanRegression rewrite/trans_param_section_routine.R')
-source('~/Documents/Gelman Research/stanRegression rewrite/model_section_routine.R')
-source('~/Documents/Gelman Research/stanRegression rewrite/ll_stmt_routine.R')
-source('~/Documents/Gelman Research/stanRegression rewrite/generated_section_routine.R')
+setwd('~/Documents/Gelman Research/stanRegression rewrite/R Code/')
+source('data_section_routines.R')
+source('organize_terms.R')
+source('parse_terms.R')
+source('param_section_routine.R')
+source('trans_param_section_routine.R')
+source('model_section_routine.R')
+source('ll_stmt_routine.R')
+source('generated_section_routine.R')
 
 stan_lmer <- function(user_formula, data, family = "gaussian",
                       default_prior = "dnorm(0,1)", loc_scale_transform = TRUE,
@@ -82,22 +83,6 @@ parse_and_add_predictor_terms_to_sections_and_data_list <- function(organized_pr
 {
   stan_data_list <- list()
   
-  #Parse random effects
-  ran_eff_terms_list <- organized_predictor_term_info$"ran_eff_list"
-  num_ran_eff_terms <- length(ran_eff_terms_list)
-  group_terms_list <- names(ran_eff_terms_list)
-  if (num_ran_eff_terms > 0)
-  {
-    for (i in 1:num_ran_eff_terms)
-    {
-      group_term <- group_terms_list[[i]]
-      varying_terms_list <- ran_eff_terms_list[[group_term]]
-      new_info <- parse_and_add_random_eff_to_sections_and_data_list(group_term, varying_terms_list, data_matrix, code_section_list)
-      code_section_list <- new_info$code
-      stan_data_list <- c(stan_data_list, new_info$"stan_data_list")
-    }
-  }
-  
   #Parse fixed effects
   fixed_eff_list <- organized_predictor_term_info$"fixed_eff_list"
   fixed_eff_term_list <- names(fixed_eff_list)
@@ -114,13 +99,31 @@ parse_and_add_predictor_terms_to_sections_and_data_list <- function(organized_pr
     }
   }
   
+  #Parse random effects
+  ran_eff_terms_list <- organized_predictor_term_info$"ran_eff_list"
+  num_ran_eff_terms <- length(ran_eff_terms_list)
+  group_terms_list <- names(ran_eff_terms_list)
+  covered_fixed_eff_list <- c(names(fixed_eff_list), list("Intercept"))
+  if (num_ran_eff_terms > 0)
+  {
+    for (i in 1:num_ran_eff_terms)
+    {
+      group_term <- group_terms_list[[i]]
+      varying_terms_str <- ran_eff_terms_list[[group_term]]
+      new_info <- parse_and_add_random_eff_to_sections_and_data_list(group_term, varying_terms_str, data_matrix, covered_fixed_eff_list, code_section_list)
+      code_section_list <- new_info$code
+      stan_data_list <- c(stan_data_list, new_info$"stan_data_list")
+    }
+  }
+  
+  
   return(list("code" = code_section_list, "stan_data_list" = stan_data_list))
 }
 
-parse_and_add_random_eff_to_sections_and_data_list <- function(group_term, varying_terms_list, data_matrix, code_section_list)
+parse_and_add_random_eff_to_sections_and_data_list <- function(group_term, varying_terms_list, data_matrix, covered_fixed_eff_terms_list, code_section_list)
 {
-  parsed_term <- parse_random_eff_term(group_term, varying_terms_list, data_matrix)
-
+  parsed_term <- parse_random_eff_term(group_term, varying_terms_list, data_matrix, covered_fixed_eff_terms_list)
+  
   code_section_list$data_section <- add_rand_eff_term_to_data_section(parsed_term, code_section_list$data_section)
   code_section_list$param_section <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_param_section(parsed_term,code_section_list$param_section)", sep = "")))
   code_section_list$trans_param_section <- eval(parse(text = paste("add_", parsed_term$"ran_eff_type", "_rand_eff_term_to_trans_param_section(parsed_term,code_section_list$trans_param_section)", sep = "")))

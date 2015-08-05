@@ -7,8 +7,18 @@ add_fixed_eff_term_to_data_section <- function(parsed_fixed_term, data_section)
 
 add_rand_eff_term_to_data_section <- function(parsed_term, data_section)
 {
+  num_data_terms <- length(parsed_term$"data_terms")
   data_section <- paste(data_section, create_array_data_line(parsed_term$"data_terms"[[1]], "int", parsed_term$"size"[[1]]), sep = "")
-  return(paste(data_section, create_constant_data_line(parsed_term$"data_terms"[[2]], "int", "<lower=1>"), sep = ""))
+  data_section <- paste(data_section, create_constant_data_line(parsed_term$"data_terms"[[2]], "int", "<lower=1>"), sep = "")
+  if (num_data_terms > 2)
+  {
+    for (i in 3:num_data_terms)
+    {
+      data_section <- paste(data_section, create_array_data_line(parsed_term$"data_terms"[[i]], parsed_term$"stan_data_type"[[i]], parsed_term$"size"[[i]]), sep = "")
+    }  
+  }
+  
+  return(data_section)
 }
 
 add_resp_term_to_data_section_for_gaussian <- function(parsed_resp_term, data_section)
