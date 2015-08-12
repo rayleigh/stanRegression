@@ -162,8 +162,8 @@ get_missing_fixed_eff_info <- function(missing_fixed_eff_terms_list, data_matrix
     {
       missing_fixed_term <- clean_term_name(missing_fixed_eff_terms_list[[i]])
       missing_fixed_terms_data[[missing_fixed_term]] <- data_matrix[, missing_fixed_term] 
-      missing_fixed_terms_type <- determine_stan_type(typeof(missing_fixed_terms_data[[missing_fixed_term]]))
-      missing_fixed_terms_size <- "N"
+      missing_fixed_terms_type[[i]] <- determine_stan_type(typeof(missing_fixed_terms_data[[missing_fixed_term]]))
+      missing_fixed_terms_size[[i]] <- "N"
     }
   }
   return(list("missing_data" = missing_fixed_terms_data, "missing_type" = missing_fixed_terms_type, "missing_size" = missing_fixed_terms_size))
